@@ -5,8 +5,13 @@
 package it.polito.tdp.itunes;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
+
+import it.polito.tdp.itunes.model.Adiacenza;
+import it.polito.tdp.itunes.model.Genre;
 import it.polito.tdp.itunes.model.Model;
+import it.polito.tdp.itunes.model.Track;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -17,6 +22,8 @@ import javafx.scene.control.TextField;
 public class FXMLController {
 
 	private Model model;
+	
+	private boolean grafoCreato = false;
 	
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
@@ -34,10 +41,10 @@ public class FXMLController {
     private Button btnMassimo; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbCanzone"
-    private ComboBox<?> cmbCanzone; // Value injected by FXMLLoader
+    private ComboBox<Track> cmbCanzone; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbGenere"
-    private ComboBox<?> cmbGenere; // Value injected by FXMLLoader
+    private ComboBox<Genre> cmbGenere; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtMemoria"
     private TextField txtMemoria; // Value injected by FXMLLoader
@@ -47,18 +54,64 @@ public class FXMLController {
 
     @FXML
     void btnCreaLista(ActionEvent event) {
-
+    	txtResult.clear();
+        if(cmbCanzone.getValue()==null) {
+        	txtResult.appendText("inserisci una canzone!");
+        	return;
+        }
+    	Track canzonePreferita = cmbCanzone.getValue();
+    	int m;
+    	try {
+    		m = Integer.parseInt(txtMemoria.getText());
+    	}catch(NumberFormatException e) {
+    		txtResult.appendText("inserisci una valore intero di memoria!");
+        	return;
+    	}
+    	if(!grafoCreato) {
+    		txtResult.appendText("prima crea il grafo!");
+    		return;
+    	}
+    	
+    	txtResult.appendText("LISTA CANZONI MIGLIORI: "+"\n");
+    	for(Track t : this.model.calcolaLista(m, canzonePreferita)) {
+    		txtResult.appendText(t+"\n");
+    	}
+    	
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
 
+    	txtResult.clear();
+    	if(cmbGenere.getValue()==null) {
+    		txtResult.appendText("inserisci un genere!");
+    		return;
+    	}
+    	Genre genere = cmbGenere.getValue();
+    	this.model.creaGrafo(genere);
+    	grafoCreato=true;
+    	txtResult.appendText("GRAFO CREATO!\n");
+    	txtResult.appendText("#VERTICI = "+this.model.getNumeroVertici(genere));
+    	txtResult.appendText("\n#ARCHI = "+this.model.getNumeroArchi(genere));
+    	
+    	this.cmbCanzone.getItems().addAll(this.model.getVertici(cmbGenere.getValue()));
     }
 
     @FXML
     void doDeltaMassimo(ActionEvent event) {
-    	
-    	
+    	txtResult.clear();
+    	if(cmbGenere.getValue()==null) {
+    		txtResult.appendText("inserisci un genere!");
+    		return;
+    	}
+    	if(!grafoCreato) {
+    		txtResult.appendText("prima crea il grafo!");
+    		return;
+    	}
+    	txtResult.appendText("COPPIA CANZONI DELTA MASSIMO: \n");
+    	Genre genere = cmbGenere.getValue();
+    	List<Adiacenza> result = this.model.getDeltaMassimo(genere);
+    	txtResult.appendText(result.toString());
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -75,6 +128,10 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	
+    	this.cmbGenere.getItems().addAll(this.model.getAllGeneri());
+    	
+    	txtMemoria.setText(null);
     }
 
 }
