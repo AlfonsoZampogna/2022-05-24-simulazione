@@ -143,22 +143,23 @@ public class ItunesDAO {
 		return result;
 	}
 
-	public List<Track> getVertici(Genre genere){
-		String sql = "SELECT * "
+	public List<Track> getGenreTracks(Genre g){
+		final String sql = "SELECT DISTINCT * "
 				+ "FROM track "
-				+ "WHERE genreid=?";
-        List<Track> result = new LinkedList<>();
+				+ "WHERE  track.GenreId=? ";
+		List<Track> result = new ArrayList<Track>();
 		
 		try {
 			Connection conn = DBConnect.getConnection();
 			PreparedStatement st = conn.prepareStatement(sql);
-			st.setInt(1, genere.getGenreId());
+			st.setInt(1, g.getGenreId());
 			ResultSet res = st.executeQuery();
 
 			while (res.next()) {
-				//Integer trackId, String name, String composer, int milliseconds, int bytes, double unitPrice
-				result.add(new Track(res.getInt("trackId"), res.getString("Name"), res.getString("composer")
-						, res.getInt("milliseconds"), res.getInt("bytes"), res.getDouble("unitPrice")));
+				result.add(new Track(res.getInt("TrackId"), res.getString("Name"), 
+						res.getString("Composer"), res.getInt("Milliseconds"), 
+						res.getInt("Bytes"),res.getDouble("UnitPrice")));
+			
 			}
 			conn.close();
 		} catch (SQLException e) {
@@ -168,28 +169,24 @@ public class ItunesDAO {
 		return result;
 	}
 	
-	public List<Adiacenza> getArchi(Genre genere){
-		String sql = "SELECT t1.TrackId source, t2.TrackId target, ABS( (t1.Milliseconds-t2.Milliseconds)) peso "
+	public List<Adiacenza> getConnectedTracks(Genre g){
+		final String sql = "SELECT DISTINCT t1.TrackId AS t1, t1.Name as nome1, t2.Name AS nome2, t2.TrackId AS t2, abs(t1.Milliseconds-t2.Milliseconds) AS peso "
 				+ "FROM track t1, track t2 "
 				+ "WHERE  t1.MediaTypeId=t2.MediaTypeId AND t1.TrackId>t2.TrackId "
-				+ " AND t1.GenreId=t2.GenreId AND t1.GenreId=?";
-        List<Adiacenza> result = new LinkedList<>();
-        
-        Map<Integer, Track> vertici = new HashMap<Integer, Track>();
-        for(Track t : this.getVertici(genere))
-        	vertici.put(t.getTrackId(), t);
+				+ "  AND t1.GenreId=? AND t1.GenreId=t2.GenreId ";
+		List<Adiacenza> result = new ArrayList<Adiacenza>();
 		
 		try {
 			Connection conn = DBConnect.getConnection();
 			PreparedStatement st = conn.prepareStatement(sql);
-			st.setInt(1, genere.getGenreId());
+			st.setInt(1, g.getGenreId());
 			ResultSet res = st.executeQuery();
 
 			while (res.next()) {
-				result.add(new Adiacenza(vertici.get(res.getInt("source"))
-						,vertici.get(res.getInt("target")), Math.abs(res.getDouble("peso"))));
-			}
+				result.add(new Adiacenza(res.getInt("t1"),res.getString("nome1"), 
+						res.getInt("t2"), res.getString("nome2"), res.getDouble("peso")));
 			
+			}
 			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -198,24 +195,4 @@ public class ItunesDAO {
 		return result;
 	}
 	
-	public List<Adiacenza> getArchiMaxDelta(Genre genere){
-		List<Adiacenza> archi = this.getArchi(genere);
-		List<Adiacenza> result = new LinkedList<>();
-		Adiacenza adiacenzaMax = null;
-		double pesoMax = 0.0;
-		for(Adiacenza a : archi) {
-			if(a.getPeso()>pesoMax) {
-				adiacenzaMax = a;
-				pesoMax=a.getPeso();
-			}
-		}
-		result.add(adiacenzaMax);
-		for(Adiacenza a : archi) {
-			if(a.getPeso()>=pesoMax && !a.equals(adiacenzaMax) 
-					&& !a.getSource().equals(adiacenzaMax.getTarget())) {
-				result.add(a);
-			}
-		}
-		return result;
-	}
 }

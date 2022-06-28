@@ -23,7 +23,6 @@ public class FXMLController {
 
 	private Model model;
 	
-	private boolean grafoCreato = false;
 	
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
@@ -55,63 +54,64 @@ public class FXMLController {
     @FXML
     void btnCreaLista(ActionEvent event) {
     	txtResult.clear();
-        if(cmbCanzone.getValue()==null) {
-        	txtResult.appendText("inserisci una canzone!");
-        	return;
-        }
-    	Track canzonePreferita = cmbCanzone.getValue();
-    	int m;
-    	try {
-    		m = Integer.parseInt(txtMemoria.getText());
-    	}catch(NumberFormatException e) {
-    		txtResult.appendText("inserisci una valore intero di memoria!");
-        	return;
-    	}
-    	if(!grafoCreato) {
-    		txtResult.appendText("prima crea il grafo!");
+    	Track t = this.cmbCanzone.getValue();
+    	if(t==null) {
+    		txtResult.appendText("inserisci una canzone.");
     		return;
     	}
-    	
-    	txtResult.appendText("LISTA CANZONI MIGLIORI: "+"\n");
-    	for(Track t : this.model.calcolaLista(m, canzonePreferita)) {
-    		txtResult.appendText(t+"\n");
+    	String capacita = this.txtMemoria.getText();
+    	try {
+    		int memoria = Integer.parseInt(capacita);
+    		if(memoria<=0) {
+    			txtResult.appendText("inserisci un numero di memoria maggiore di zero");
+    			return;
+    		}
+    		List<Track> lista = this.model.cercaLista(t,memoria);
+    		if(lista==null)
+    			return;
+    		txtResult.appendText("LISTA CANZONI : \n");
+    		for(Track tr : lista) {
+    			txtResult.appendText(tr+"\n");
+    		}
+    			
+    	}catch(NumberFormatException e) {
+    		e.printStackTrace();
+    		txtResult.appendText("inserisci un numero di memoria maggiore di zero");
     	}
-    	
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
-
     	txtResult.clear();
-    	if(cmbGenere.getValue()==null) {
-    		txtResult.appendText("inserisci un genere!");
+    	Genre g = this.cmbGenere.getValue();
+    	if(g==null) {
+    		txtResult.appendText("inserire un genere.");
     		return;
     	}
-    	Genre genere = cmbGenere.getValue();
-    	this.model.creaGrafo(genere);
-    	grafoCreato=true;
-    	txtResult.appendText("GRAFO CREATO!\n");
-    	txtResult.appendText("#VERTICI = "+this.model.getNumeroVertici(genere));
-    	txtResult.appendText("\n#ARCHI = "+this.model.getNumeroArchi(genere));
+    	this.model.creaGrafo(g);
+    	txtResult.appendText("grafo creato!\n");
+    	txtResult.appendText("#VERTICI : "+this.model.getNumVertici());
+    	txtResult.appendText("\n#ARCHI : "+this.model.getNumArchi());
     	
-    	this.cmbCanzone.getItems().addAll(this.model.getVertici(cmbGenere.getValue()));
+    	this.cmbCanzone.getItems().addAll(this.model.getTrackVertici(g));
     }
 
     @FXML
     void doDeltaMassimo(ActionEvent event) {
     	txtResult.clear();
-    	if(cmbGenere.getValue()==null) {
-    		txtResult.appendText("inserisci un genere!");
+    	Genre g = this.cmbGenere.getValue();
+    	if(g==null) {
+    		txtResult.appendText("inserire un genere.");
     		return;
     	}
-    	if(!grafoCreato) {
-    		txtResult.appendText("prima crea il grafo!");
+    	List<Adiacenza> deltaMax = this.model.getDeltaMassimo();
+    	if(deltaMax==null) {
+    		txtResult.appendText("prima crea il grafo.");
     		return;
     	}
-    	txtResult.appendText("COPPIA CANZONI DELTA MASSIMO: \n");
-    	Genre genere = cmbGenere.getValue();
-    	List<Adiacenza> result = this.model.getDeltaMassimo(genere);
-    	txtResult.appendText(result.toString());
+    	txtResult.appendText("COPPIA CANZONI DELTA MASSIMO : \n");
+    	for(Adiacenza a : deltaMax)
+    		txtResult.appendText(a+"\n");
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -128,10 +128,8 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
-    	
-    	this.cmbGenere.getItems().addAll(this.model.getAllGeneri());
-    	
-    	txtMemoria.setText(null);
+    	this.cmbGenere.getItems().addAll(this.model.getAllGenres());
+    
     }
 
 }
